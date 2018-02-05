@@ -1,0 +1,4 @@
+[hosts]
+
+nodo1 ansible_ssh_host=172.22.190.35 ansible_ssh_user=vagrant
+nodo2 ansible_ssh_host=172.22.190.36 ansible_ssh_user=vagrant

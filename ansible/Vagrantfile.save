@@ -1,0 +1,25 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  config.vm.define :nodo1 do |nodo1|
+    nodo1.vm.box = "debian/stretch64"
+    nodo1.vm.hostname = "nodo1"
+    nodo1.vm.network :public_network,:bridge=>"enp2s0"
+    nodo1.vm.network :private_network, type: "dhcp",
+       virtualbox__intnet: "servicios"
+    nodo1.vm.provision "shell",
+       run: "always",
+       inline: "ip r del default via 10.0.2.2 && ip r add default via 172.22.0.1"
+  end
+  config.vm.define :nodo2 do |nodo2|
+    nodo2.vm.box = "debian/stretch64"
+    nodo2.vm.hostname = "nodo2"
+    nodo2.vm.network :public_network,:bridge=>"enp2s0"
+    nodo2.vm.network :private_network, type: "dhcp",
+       virtualbox__intnet: "servicios"
+    nodo2.vm.provision "shell",
+       run: "always",
+       inline: "ip r del default via 10.0.2.2 && ip r add default via 172.22.0.1"
+  end
+end

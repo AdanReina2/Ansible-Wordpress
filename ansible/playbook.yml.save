@@ -1,0 +1,165 @@
+---
+- hosts: nodo1
+  user: vagrant
+  
+  tasks:
+    - name: vars
+      include_vars:
+        file: vars
+    
+    - name: Actualizar
+      apt: update_cache=yes
+
+    - name: MariaDB install
+      action: apt pkg=mysql-server state=installed
+
+    - name: Python-MariaDB module install
+      action: apt pkg=python-mysqldb state=installed
+
+    - name: Configure MariaDB
+      mysql_db: name={{ db_name }} state=present
+      
+    - mysql_user: name={{ user }} password={{ password }} priv='*.*:ALL' state=present
+      
+    - name: Configuration file MariaDB
+      copy: src=mariadb/my.cnf dest=/etc/mysql/mariadb.conf.d/50-server.cnf
+
+    - name: Restart MariaDB
+      service: name=mariadb state=restarted
+
+    - name: Bind9 Install
+      apt: name=bind9
+
+    - name: Bind9 Zone File
+      template: src=bind9/db.directa dest=/var/cache/bind/
+
+    - name: Bind9 Configration File
+      template: src=bind9/named.conf.local dest=/etc/bind/
+ 
+- hosts: nodo2
+  tasks:
+  - name: vars
+    include_vars:
+      file: vars
+
+  - name: Nginx install
+    action: apt pkg=nginx state=installed
+  
+  - name: Zip install
+    action: apt pkg=zip state=installed
+
+  - name: PHP-MySQL install
+    action: apt pkg=php-mysql state=installed
+
+  - name: Configure Nginx
+    template: src=nginx/default dest=/etc/nginx/sites-available/default
+
+  - name: Restart Nginx
+    service: name=nginx state=restarted
+
+  - name: Install PHP-FPM
+    action: apt pkg=php7.0-fpm state=installed
+
+  - name: Wordpress
+    unarchive: src=wordpress/wordpress.zip dest=/var/www/html
+
+
+<?php
+/**
+ * The base configuration for WordPress
+ *
+ * The wp-config.php creation script uses this file during the
+ * installation. You don't have to use the web site, you can
+ * copy this file to "wp-config.php" and fill in the values.
+ *
+ * This file contains the following configurations:
+ *
+ * * MySQL settings
+ * * Secret keys
+ * * Database table prefix
+ * * ABSPATH
+ *
+ * @link https://codex.wordpress.org/Editing_wp-config.php
+ *
+ * @package WordPress
+ */
+
+// ** MySQL settings - You can get this info from your web host ** //
+/** The name of the database for WordPress */
+define('DB_NAME', '{{ db }}');
+
+/** MySQL database username */
+define('DB_USER', '{{ user }}');
+
+/** MySQL database password */
+define('DB_PASSWORD', '{{ passwd }}');
+
+/** MySQL hostname */
+define('DB_HOST', '{{ ip_nodo1_intern }}');
+
+/** Database Charset to use in creating database tables. */
+define('DB_CHARSET', 'utf8');
+
+/** The Database Collate type. Don't change this if in doubt. */
+define('DB_COLLATE', '');
+
+/**#@+
+ * Authentication Unique Keys and Salts.
+ *
+ * Change these to different unique phrases!
+ * You can generate these using the {@link https://api.wordpress.org/secret-key/1.1/salt/ WordPress.org secret-key service}
+ * You can change these at any point in time to invalidate all existing cookies. This will force all users to have to log in again.
+ *
+ * @since 2.6.0
+ */
+define('AUTH_KEY',         'put your unique phrase here');
+define('SECURE_AUTH_KEY',  'put your unique phrase here');
+define('LOGGED_IN_KEY',    'put your unique phrase here');
+define('NONCE_KEY',        'put your unique phrase here');
+define('AUTH_SALT',        'put your unique phrase here');
+define('SECURE_AUTH_SALT', 'put your unique phrase here');
+define('LOGGED_IN_SALT',   'put your unique phrase here');
+define('NONCE_SALT',       'put your unique phrase here');
+
+/**#@-*/
+
+/**
+ * WordPress Database Table prefix.
+ *
+ * You can have multiple installations in one database if you give each
+ * a unique prefix. Only numbers, letters, and underscores please!
+ */
+$table_prefix  = 'wp_';
+
+/**
+ * For developers: WordPress debugging mode.
+ *
+ * Change this to true to enable the display of notices during development.
+ * It is strongly recommended that plugin and theme developers use WP_DEBUG
+ * in their development environments.
+ *
+ * For information on other constants that can be used for debugging,
+ * visit the Codex.
+ *
+ * @link https://codex.wordpress.org/Debugging_in_WordPress
+ */
+define('WP_DEBUG', false);
+
+/* That's all, stop editing! Happy blogging. */
+
+/** Absolute path to the WordPress directory. */
+if ( !defined('ABSPATH') )
+	define('ABSPATH', dirname(__FILE__) . '/');
+
+/** Sets up WordPress vars and included files. */
+require_once(ABSPATH . 'wp-settings.php');
+  - name: wp-cli install
+    get_url:
+      url: https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+      dest: /home/vagrant/wp-cli.phar
+  
+  - name: wp-cli configure
+    shell: chmod +x /home/vagrant/wp-cli.phar && mv /home/vagrant/wp-cli.phar /usr/local/bin/wp
+
+  - name: Configure Wordpress
+    shell: cd /var/www/html/wordpress && wp core install --url=http://{{ nameweb }} --title="{{ titulo }}" --admin_user="{{ wp_user }}" --admin_password="{{ wp_password }}" --admin_email={{ email }} --allow-root 

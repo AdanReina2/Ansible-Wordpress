@@ -1,0 +1,8 @@
+db_name: "wordpress"
+user: "wordpress"
+password: "wordpress"
+nameweb: "wordpress.example.com"
+titulo: "Wordpress deploy with Ansible"
+wp_user: "wordpress"
+wp_password: "wordpress"
+email: "adan.reina020513@gmail.com"
